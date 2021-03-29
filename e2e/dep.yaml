@@ -248,7 +248,7 @@ spec:
             - --enable-leader-election
           command:
             - /manager
-          image: drorhub/dror-ass:16
+          image: drorhub/dror-ass:18
           name: manager
           ports:
             - containerPort: 80

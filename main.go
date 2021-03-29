@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	webappv1 "assignment/Ingress-Controller/api/v1"
+	"assignment/Ingress-Controller/controllers"
 	"flag"
 	"fmt"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,9 +29,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"strings"
-
-	webappv1 "assignment/Ingress-Controller/api/v1"
-	"assignment/Ingress-Controller/controllers"
 	// +kubebuilder:scaffold:imports
 )
 

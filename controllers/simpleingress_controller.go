@@ -17,14 +17,14 @@ limitations under the License.
 package controllers
 
 import (
+	webappv1 "assignment/Ingress-Controller/api/v1"
 	"assignment/Ingress-Controller/controllers/utils"
 	"context"
 	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	webappv1 "assignment/Ingress-Controller/api/v1"
 )
 
 // SimpleIngressReconciler reconciles a SimpleIngress object
@@ -48,6 +48,11 @@ func (r *SimpleIngressReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.Name}, &simIngress)
 
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			r.Log.Info("not found", "err: ", err)
+			r.IngressRouter.deleteRoute(req.Name)
+			return ctrl.Result{}, nil
+		}
 		r.Log.Info("err getting simpleIngress resource")
 		return ctrl.Result{}, nil
 	}

@@ -12,12 +12,14 @@ import (
 type IngressRouterEval struct {
 	Client       client.Client
 	RoutingTable map[string]string
+	IngRoute     map[string]string
 }
 
 func NewIngressRouterEval(client client.Client) *IngressRouterEval {
 	ingressEval := IngressRouterEval{}
 	ingressEval.Client = client
 	ingressEval.RoutingTable = map[string]string{}
+	ingressEval.IngRoute = map[string]string{}
 
 	return &ingressEval
 }
@@ -31,6 +33,7 @@ func (e *IngressRouterEval) routeNewSimpleIngress(simpleIngress webappv1.SimpleI
 
 	route := fmt.Sprintf("http://%s.%s.svc.cluster.local:%v", reqSvc.Name, reqSvc.Namespace, reqSvc.Spec.Ports[0].Port)
 	e.RoutingTable[simpleIngress.Spec.Host] = route
+	e.IngRoute[simpleIngress.Name] = simpleIngress.Spec.Host
 	return nil
 }
 
@@ -44,4 +47,13 @@ func (e *IngressRouterEval) RunNewRoute(route string) (*http.Response, error) {
 		return res, nil
 	}
 	return nil, fmt.Errorf("not found")
+}
+
+func (e *IngressRouterEval) deleteRoute(route string) {
+	val, ok := e.IngRoute[route]
+	if ok {
+		delete(e.RoutingTable, val)
+		delete(e.IngRoute, route)
+	}
+
 }
