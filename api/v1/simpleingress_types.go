@@ -29,7 +29,8 @@ type SimpleIngressSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of SimpleIngress. Edit SimpleIngress_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Host    string `json:"host,omitempty"`
+	SvcName string `json:"svcName,omitempty"`
 }
 
 // SimpleIngressStatus defines the observed state of SimpleIngress

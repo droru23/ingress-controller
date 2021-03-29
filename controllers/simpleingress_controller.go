@@ -17,8 +17,8 @@ limitations under the License.
 package controllers
 
 import (
+	"assignment/Ingress-Controller/controllers/utils"
 	"context"
-
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,8 +30,9 @@ import (
 // SimpleIngressReconciler reconciles a SimpleIngress object
 type SimpleIngressReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	IngressRouter *IngressRouterEval
 }
 
 // +kubebuilder:rbac:groups=webapp.my.domain,resources=simpleingresses,verbs=get;list;watch;create;update;patch;delete
@@ -40,8 +41,23 @@ type SimpleIngressReconciler struct {
 func (r *SimpleIngressReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("simpleingress", req.NamespacedName)
+	r.Log.Info("new simple ingress resource asked to be deployed")
+	ctx := utils.GenerateNewContext(req)
 
-	// your logic here
+	simIngress := webappv1.SimpleIngress{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.Name}, &simIngress)
+
+	if err != nil {
+		r.Log.Info("err getting simpleIngress resource")
+		return ctrl.Result{}, nil
+	}
+
+	err = r.IngressRouter.routeNewSimpleIngress(simIngress, ctx)
+	if err != nil {
+		r.Log.Info("error creating new routing rule with err", "err: ", err)
+		return ctrl.Result{}, nil
+	}
+	r.Log.Info("successfully created new routing rule")
 
 	return ctrl.Result{}, nil
 }

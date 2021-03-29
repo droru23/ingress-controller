@@ -18,13 +18,15 @@ package main
 
 import (
 	"flag"
-	"os"
-
+	"fmt"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"net/http"
+	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"strings"
 
 	webappv1 "assignment/Ingress-Controller/api/v1"
 	"assignment/Ingress-Controller/controllers"
@@ -58,7 +60,7 @@ func main() {
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
-		LeaderElection:     enableLeaderElection,
+		LeaderElection:     false,
 		LeaderElectionID:   "056bc37b.my.domain",
 	})
 	if err != nil {
@@ -66,15 +68,48 @@ func main() {
 		os.Exit(1)
 	}
 
+	// creates the clientset
+
+	ingRouter := controllers.NewIngressRouterEval(mgr.GetClient())
+
 	if err = (&controllers.SimpleIngressReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("SimpleIngress"),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Log:           ctrl.Log.WithName("controllers").WithName("SimpleIngress"),
+		Scheme:        mgr.GetScheme(),
+		IngressRouter: ingRouter,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SimpleIngress")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
+
+	go func() {
+		servErr := http.ListenAndServe(":3000", nil)
+		if servErr != nil {
+			panic(servErr)
+		}
+	}()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		ctrl.Log.Info("incoming http request")
+		reqHost := strings.Split(r.Host, ".")[0]
+		if reqHost == "" {
+			fmt.Fprintf(w, "Host not found")
+			return
+		}
+		ctrl.Log.Info("search route: ", "route", reqHost)
+
+		res, err := ingRouter.RunNewRoute(reqHost)
+		if err != nil {
+			fmt.Fprintf(w, "Host not found")
+			return
+		}
+		err = res.Write(w)
+		if err != nil {
+			fmt.Fprintf(w, "faild to return answer")
+		}
+
+	})
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
