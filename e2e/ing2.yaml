@@ -1,0 +1,8 @@
+apiVersion: webapp.my.domain/v1
+kind: SimpleIngress
+metadata:
+  name: test-app2
+spec:
+  # Add fields here
+  svcName: backend-svc
+  host: backend
