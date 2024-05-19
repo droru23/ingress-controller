@@ -17,10 +17,12 @@ limitations under the License.
 package controllers
 
 import (
-	webappv1 "assignment/Ingress-Controller/api/v1"
-	"assignment/Ingress-Controller/controllers/utils"
 	"context"
 	"github.com/go-logr/logr"
+
+	webappv1 "assignment/Ingress-Controller/api/v1"
+	"assignment/Ingress-Controller/controllers/utils"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,41 +34,41 @@ type SimpleIngressReconciler struct {
 	client.Client
 	Log           logr.Logger
 	Scheme        *runtime.Scheme
-	IngressRouter *IngressRouterEval
+	IngressRouter IngressRouterEval
 }
 
 // +kubebuilder:rbac:groups=webapp.my.domain,resources=simpleingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=webapp.my.domain,resources=simpleingresses/status,verbs=get;update;patch
 
-func (r *SimpleIngressReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("simpleingress", req.NamespacedName)
-	r.Log.Info("new simple ingress resource asked to be deployed")
+// Reconcile reconciles the SimpleIngress resources
+func (r *SimpleIngressReconciler) Reconcile(_ context.Context, req ctrl.Request) (ctrl.Result, error) {
 	ctx := utils.GenerateNewContext(req)
+	log := r.Log.WithValues("simpleingress", req.NamespacedName)
+	log.Info("Reconciling SimpleIngress resource")
 
 	simIngress := webappv1.SimpleIngress{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.Name}, &simIngress)
-
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			r.Log.Info("not found", "err: ", err)
-			r.IngressRouter.deleteRoute(req.Name)
+			log.Info("SimpleIngress resource not found. Deleting route if exists.")
+			r.IngressRouter.DeleteRoute(req.Name)
 			return ctrl.Result{}, nil
 		}
-		r.Log.Info("err getting simpleIngress resource")
-		return ctrl.Result{}, nil
+		log.Error(err, "Failed to get SimpleIngress resource")
+		return ctrl.Result{}, err
 	}
 
-	err = r.IngressRouter.routeNewSimpleIngress(simIngress, ctx)
+	err = r.IngressRouter.RouteNewSimpleIngress(simIngress, ctx)
 	if err != nil {
-		r.Log.Info("error creating new routing rule with err", "err: ", err)
-		return ctrl.Result{}, nil
+		log.Error(err, "Failed to create new routing rule")
+		return ctrl.Result{}, err
 	}
-	r.Log.Info("successfully created new routing rule")
+	log.Info("Successfully created new routing rule")
 
 	return ctrl.Result{}, nil
 }
 
+// SetupWithManager sets up the controller with the Manager.
 func (r *SimpleIngressReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&webappv1.SimpleIngress{}).

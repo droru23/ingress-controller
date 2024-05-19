@@ -19,16 +19,14 @@ package main
 import (
 	webappv1 "assignment/Ingress-Controller/api/v1"
 	"assignment/Ingress-Controller/controllers"
+	"assignment/Ingress-Controller/controllers/router"
 	"flag"
-	"fmt"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"net/http"
 	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"strings"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -39,7 +37,6 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
 	_ = webappv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -47,72 +44,67 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+
+	// Parse command-line flags
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
+	// Set up logger
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	// Create a new manager
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
-		LeaderElection:     false,
+		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "056bc37b.my.domain",
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		setupLog.Error(err, "Unable to start manager")
 		os.Exit(1)
 	}
 
-	// creates the clientset
-
+	// Create the IngressRouterEval
 	ingRouter := controllers.NewIngressRouterEval(mgr.GetClient())
 
+	// Set up the SimpleIngressReconciler with the manager
 	if err = (&controllers.SimpleIngressReconciler{
 		Client:        mgr.GetClient(),
 		Log:           ctrl.Log.WithName("controllers").WithName("SimpleIngress"),
 		Scheme:        mgr.GetScheme(),
 		IngressRouter: ingRouter,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "SimpleIngress")
+		setupLog.Error(err, "Unable to create controller", "controller", "SimpleIngress")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 
+	// Start a separate goroutine for HTTP server
+	handler := router.NewHandler(ingRouter)
+	healthRouter := router.SetupHealth(handler)
+	ingeressRouter := router.SetupRouter(handler)
+
 	go func() {
-		servErr := http.ListenAndServe(":3000", nil)
-		if servErr != nil {
-			panic(servErr)
+		if err := healthRouter.Run(":8081"); err != nil {
+			setupLog.Error(err, "Failed to start health server")
+			os.Exit(1)
 		}
 	}()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		ctrl.Log.Info("incoming http request")
-		reqHost := strings.Split(r.Host, ".")[0]
-		if reqHost == "" {
-			fmt.Fprintf(w, "Host not found")
-			return
+	go func() {
+		if err := ingeressRouter.Run(":8080"); err != nil {
+			setupLog.Error(err, "Failed to start ingress server")
+			os.Exit(1)
 		}
-		ctrl.Log.Info("search route: ", "route", reqHost)
+	}()
 
-		res, err := ingRouter.RunNewRoute(reqHost)
-		if err != nil {
-			fmt.Fprintf(w, "Host not found")
-			return
-		}
-		err = res.Write(w)
-		if err != nil {
-			fmt.Fprintf(w, "faild to return answer")
-		}
-
-	})
-
-	setupLog.Info("starting manager")
+	setupLog.Info("Starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+		setupLog.Error(err, "Problem running manager")
 		os.Exit(1)
 	}
 }

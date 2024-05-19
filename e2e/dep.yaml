@@ -10,7 +10,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.5
-  creationTimestamp: null
   name: simpleingresses.webapp.my.domain
 spec:
   group: webapp.my.domain
@@ -59,8 +58,8 @@ status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: []
-  storedVersions: []
+  conditions: [ ]
+  storedVersions: [ ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

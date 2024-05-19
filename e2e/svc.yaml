@@ -12,5 +12,3 @@ spec:
       targetPort: 5678
   selector:
     app: test
-status:
-  loadBalancer: {}

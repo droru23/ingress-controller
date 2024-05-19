@@ -10,5 +10,3 @@ spec:
       image: hashicorp/http-echo:0.2.3
       args:
         - "-text=this is test"
-  restartPolicy: Never
-status: {}
