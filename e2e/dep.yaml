@@ -223,12 +223,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: testdror
+      app: ingress-controller
       control-plane: controller-manager
   template:
     metadata:
       labels:
-        app: testdror
+        app: ingress-controller
         control-plane: controller-manager
     spec:
       containers:
@@ -273,4 +273,4 @@ spec:
       targetPort: 3000
       nodePort: 31321
   selector:
-    app: testdror
+    app: ingress-controller
