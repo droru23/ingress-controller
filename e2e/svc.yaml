@@ -1,14 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: test
-  name: test
+  name: backend-svc
 spec:
   ports:
-    - name: "test"
-      port: 80
+    - port: 8080
       protocol: TCP
-      targetPort: 5678
   selector:
-    app: test
+    app: backend

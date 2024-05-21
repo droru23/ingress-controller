@@ -14,7 +14,9 @@ spec:
     spec:
       containers:
         - name: backend-container
-          image: lmnzr/simplebackend:latest
+          image: hashicorp/http-echo:0.2.3
+          args:
+            - "-text=this is test"
           resources:
             limits:
               memory: "128Mi"

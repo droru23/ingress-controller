@@ -1,8 +1,8 @@
 apiVersion: webapp.my.domain/v1
 kind: SimpleIngress
 metadata:
-  name: test-app2
+  name: backend-route
 spec:
   # Add fields here
-  svcName: test
-  host: test
+  svcName: backend-svc
+  host: backend

@@ -65,7 +65,7 @@ wait_for_condition "kubectl get pods -l app=nipPod -o jsonpath='{.items[*].statu
 wait_for_condition "kubectl get pods -l app=dep -o jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -q true" 60 5
 
 echo "Deploying test pod and service"
-kubectl apply -f e2e/pod2.yaml
+kubectl apply -f e2e/pod.yaml
 kubectl apply -f e2e/svc.yaml
 
 # Wait for test pod to be ready
