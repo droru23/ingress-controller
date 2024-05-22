@@ -1,0 +1,7 @@
+apiVersion: webapp.my.domain/v1
+kind: SimpleIngress
+metadata:
+  name: echo-server
+spec:
+  svcName: echo-server-svc
+  host: echo

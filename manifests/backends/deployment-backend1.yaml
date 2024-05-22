@@ -1,25 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-dpl
+  name: simple-backend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: simple-backend
   template:
     metadata:
       labels:
-        app: backend
+        app: simple-backend
     spec:
       containers:
         - name: backend-container
-          image: hashicorp/http-echo:0.2.3
-          args:
-            - "-text=this is test"
+          image: lmnzr/simplebackend:latest
           resources:
             limits:
               memory: "128Mi"
               cpu: "500m"
           ports:
-            - containerPort: 8081
+            - containerPort: 8080

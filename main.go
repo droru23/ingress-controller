@@ -26,6 +26,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
 )
@@ -58,8 +59,9 @@ func main() {
 	// Create a new manager
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+		},
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   "056bc37b.my.domain",
 	})

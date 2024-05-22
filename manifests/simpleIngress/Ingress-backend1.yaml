@@ -1,0 +1,7 @@
+apiVersion: webapp.my.domain/v1
+kind: SimpleIngress
+metadata:
+  name: simple-backend
+spec:
+  svcName: simple-backend-svc
+  host: simple
