@@ -46,7 +46,7 @@ Before continuing to the tasks, ensure the following tools are installed on your
 To access the files in this repository you should first clone it to your local computer.
 
 ```shell
-git clone https://github.wdf.sap.corp/I531295/Ingress-Controller.git
+git clone https://github.com/droru23/ingress-controller.git
 cd Ingress-Controller
 ``` 
 
